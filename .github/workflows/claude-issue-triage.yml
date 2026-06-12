@@ -1,0 +1,75 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+# Cancelar runs previos del mismo issue para no solapar ediciones rápidas
+concurrency:
+  group: triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    # Ignorar eventos generados por bots para evitar bucles
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Triage issue with Claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --allowed-tools
+            Bash(gh issue view:*),
+            Bash(gh issue edit:*),
+            Bash(gh issue comment:*),
+            Bash(gh label list:*),
+            Bash(gh label create:*)
+          prompt: |
+            Se ha abierto o editado el issue #${{ github.event.issue.number }} en este repositorio de Tetris.
+
+            Título: ${{ github.event.issue.title }}
+            Cuerpo:
+            ${{ github.event.issue.body }}
+
+            Tu tarea es:
+
+            1. **Analizar el issue**: Lee el título y cuerpo del issue. Luego examina los archivos del repositorio (`index.html`, `style.css`, `game.js`) para entender el contexto del problema en profundidad.
+
+            2. **Asignar labels**: Determina los labels más apropiados para este issue (por ejemplo: bug, enhancement, question, gameplay, ui, performance, accessibility, etc.). Si los labels no existen en el repositorio, créalos con `gh label create`. Luego asígnalos con `gh issue edit --add-label`.
+
+            3. **Publicar diagnóstico**: Añade un comentario al issue usando `gh issue comment` con exactamente este formato:
+
+            ```
+            ## 🔍 Diagnóstico automático
+
+            **Tipo:** <bug | mejora | pregunta | otro>
+            **Labels asignados:** <lista de labels>
+            **Resumen:** <1-2 frases describiendo el problema>
+
+            ### Causa probable / análisis
+            <Explicación técnica del problema, referenciando el código del repo cuando sea relevante>
+
+            ### Archivos y funciones afectadas
+            <Lista de archivos y funciones involucradas, ej: `game.js`: `lockPiece()`, `clearLines()`>
+
+            ### Enfoque de solución propuesto
+            <Pasos de alto nivel para implementar la solución>
+            ```
+
+            Sé preciso y técnico. Si el issue no tiene suficiente detalle, indícalo en el diagnóstico y sugiere qué información adicional se necesita.
