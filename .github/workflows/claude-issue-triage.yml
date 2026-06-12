@@ -53,7 +53,7 @@ jobs:
 
             2. **Asignar labels**: Determina los labels más apropiados para este issue (por ejemplo: bug, enhancement, question, gameplay, ui, performance, accessibility, etc.). Si los labels no existen en el repositorio, créalos con `gh label create`. Luego asígnalos con `gh issue edit --add-label`.
 
-            3. **Publicar diagnóstico**: Añade un comentario al issue usando `gh issue comment` con exactamente este formato:
+            3. **Publicar diagnóstico**: Añade un comentario al issue usando `gh issue comment`. El contenido debe estar escrito en **GitHub Flavored Markdown** (GFM) para que se renderice correctamente en GitHub: usa encabezados `##`, negritas `**`, listas `-`, bloques de código con triple backtick y nombres de archivo/función en código inline. Usa exactamente este formato:
 
             ```
             ## 🔍 Diagnóstico automático
